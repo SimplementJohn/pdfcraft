@@ -288,17 +288,15 @@ fn drop_destinations_to(doc: &mut Document, gone: &[ObjRef], keep: &[(ObjRef, Di
             dead.push((root, b"OpenAction"));
         }
     }
-    let mut candidates: Vec<ObjRef> = Vec::new();
     for (h, key) in dead {
         doc.update_dict(h, |d| {
             d.remove(key);
         })?;
-        // Only once both keys are checked: an item may lose /Dest and still have a live /A.
-        let goes_nowhere = doc.get(h).as_dict().is_some_and(|d| !d.contains(b"Dest") && !d.contains(b"A"));
-        if goes_nowhere && outline_items.contains(&h) && !candidates.contains(&h) {
-            candidates.push(h);
-        }
     }
+    // Every destinationless item, not only those that just lost theirs: a heading kept by an
+    // earlier deletion goes too once its last child does.
+    let candidates: Vec<ObjRef> =
+        outline_items.iter().copied().filter(|h| doc.get(*h).as_dict().is_some_and(|d| !d.contains(b"Dest") && !d.contains(b"A"))).collect();
     // An item is an orphan once every child of it is one too, so removal cascades up any depth.
     let mut orphans: std::collections::HashSet<ObjRef> = std::collections::HashSet::new();
     loop {

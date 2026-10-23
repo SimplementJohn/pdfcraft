@@ -497,6 +497,21 @@ fn deleting_a_page_removes_a_chain_of_bookmarks_to_it() {
 }
 
 #[test]
+fn deleting_the_last_child_page_later_removes_the_kept_heading() {
+    // Deleting A2 keeps "Part" as a heading for its child to A3; deleting A3 next leaves it empty.
+    let mut doc = doc_a();
+    add_bookmark(&mut doc, &[], 0, "Keep", 0).unwrap();
+    add_bookmark(&mut doc, &[], 1, "Part", 1).unwrap();
+    add_bookmark(&mut doc, &[1], 0, "Section", 2).unwrap();
+    delete_pages(&mut doc, &[1]).unwrap();
+    assert_eq!(titles(&bookmarks(&doc)), ["Keep", "Part[Section]"]);
+    delete_pages(&mut doc, &[1]).unwrap();
+    for d in [&doc, &full_roundtrip(&doc)] {
+        assert_eq!(titles(&bookmarks(d)), ["Keep"]);
+    }
+}
+
+#[test]
 fn deleting_a_page_drops_the_named_destinations_to_it() {
     // Four names (two in the /Names tree, two in the legacy /Dests dictionary) go to P1 or P3;
     // P2 has a link for each. Deleting P1 must drop its names and their links, keep P3's.
