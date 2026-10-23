@@ -406,6 +406,7 @@ pub(crate) fn unlink_items(doc: &mut Document, gone: &[ObjRef]) -> Result<()> {
         return Ok(());
     }
     let Some(root) = outline_root(doc) else { return Ok(()) };
+    let gone: HashSet<ObjRef> = gone.iter().copied().collect();
     let parents: Vec<ObjRef> = std::iter::once(root).chain(items(doc)).collect();
     for p in parents {
         let kids = children(doc, p);

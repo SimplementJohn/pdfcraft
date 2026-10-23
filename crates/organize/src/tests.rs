@@ -469,6 +469,34 @@ fn deleting_a_page_keeps_a_parent_bookmark_as_a_heading() {
 }
 
 #[test]
+fn deleting_a_page_removes_a_parent_whose_children_all_went_with_it() {
+    // A bookmark to A2 whose only child also goes to A2: neither is left as an empty heading.
+    let mut doc = doc_a();
+    add_bookmark(&mut doc, &[], 0, "Chapter", 1).unwrap();
+    add_bookmark(&mut doc, &[0], 0, "Section", 1).unwrap();
+    delete_pages(&mut doc, &[1]).unwrap();
+    for d in [&doc, &full_roundtrip(&doc)] {
+        assert!(bookmarks(d).is_empty());
+    }
+}
+
+#[test]
+fn deleting_a_page_removes_a_chain_of_bookmarks_to_it() {
+    // Three levels all going to A2, beside a bookmark to A1: only the latter is left.
+    let mut doc = doc_a();
+    add_bookmark(&mut doc, &[], 0, "Keep", 0).unwrap();
+    add_bookmark(&mut doc, &[], 1, "Part", 1).unwrap();
+    add_bookmark(&mut doc, &[1], 0, "Chapter", 1).unwrap();
+    add_bookmark(&mut doc, &[1, 0], 0, "Section", 1).unwrap();
+    delete_pages(&mut doc, &[1]).unwrap();
+    for d in [&doc, &full_roundtrip(&doc)] {
+        assert_eq!(titles(&bookmarks(d)), ["Keep"]);
+        let root = d.get(d.root().unwrap()).as_dict().unwrap().reference(b"Outlines").unwrap();
+        assert_eq!(count_of(d, root), Some(1));
+    }
+}
+
+#[test]
 fn deleting_a_page_drops_the_named_destinations_to_it() {
     // Four names (two in the /Names tree, two in the legacy /Dests dictionary) go to P1 or P3;
     // P2 has a link for each. Deleting P1 must drop its names and their links, keep P3's.
